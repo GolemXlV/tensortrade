@@ -29,7 +29,7 @@ build-cpu:
 	docker build -t ${CPU_IMAGE} .
 
 build-gpu:
-	docker build -t ${GPU_IMAGE} . --build-arg gpu_tag="-gpu"
+	docker build -t ${GPU_IMAGE} -f Dockerfile.gpu . --build-arg gpu_tag="-gpu"
 
 build-cpu-if-not-built: 
 	if [ ! $$(docker images -q ${CPU_IMAGE}) ]; then $(MAKE) build-cpu; fi;
