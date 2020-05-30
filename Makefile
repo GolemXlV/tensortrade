@@ -29,12 +29,12 @@ build-cpu:
 	docker build -t ${CPU_IMAGE} .
 
 build-gpu:
-	docker build -t ${GPU_IMAGE} -f Dockerfile.gpu . --build-arg gpu_tag="-gpu"
+	docker build -t ${GPU_IMAGE} . --build-arg gpu_tag="-gpu"
 
-build-cpu-if-not-built: 
+build-cpu-if-not-built:
 	if [ ! $$(docker images -q ${CPU_IMAGE}) ]; then $(MAKE) build-cpu; fi;
 
-build-gpu-if-not-built: 
+build-gpu-if-not-built:
 	if [ ! $$(docker images -q ${GPU_IMAGE}) ]; then $(MAKE) build-gpu; fi;
 
 run-notebook: build-cpu-if-not-built
@@ -49,7 +49,7 @@ run-tests: build-cpu-if-not-built
 	docker run -it --rm ${CPU_IMAGE} make test
 
 run-notebook-gpu: build-gpu-if-not-built
-	docker run -it --rm -p=8888:8888 ${GPU_IMAGE} jupyter notebook --ip='*' --port=8888 --no-browser --allow-root /examples/
+	docker run -it --gpus all -p=6006:6006 -p=8888:8888 -p=8265:8265 -v /home/golemxiv/projects/tensortrade/examples/:/examples/ ${GPU_IMAGE} jupyter notebook --ip='*' --port=8888 --no-browser --allow-root /examples/
 
 run-docs-gpu: build-gpu-if-not-built
 	if [ $$(docker ps -aq --filter name=tensortrade_docs) ]; then docker rm $$(docker ps -aq --filter name=tensortrade_docs); fi;
