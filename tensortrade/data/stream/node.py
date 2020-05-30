@@ -31,7 +31,6 @@ from tensortrade.base.core import Observable
 
 
 class Node(Observable):
-
     names = {}
 
     def __init__(self, name: str = None):
@@ -108,7 +107,11 @@ class Node(Observable):
 
     def pow(self, power: float) -> 'Node':
         name = "Pow({},{})".format(self.name, power)
-        return self.apply(lambda x: np.power(x, power)).rename(name)
+
+        def power_func(x):
+            return np.power(x, power)
+
+        return self.apply(power_func).rename(name)
 
     def sqrt(self) -> 'Node':
         name = "Sqrt({})".format(self.name)
@@ -312,7 +315,6 @@ class Node(Observable):
 
 
 class Module(Node):
-
     CONTEXTS = []
 
     def __init__(self, name: str = None):
@@ -441,7 +443,11 @@ class Select(Node):
     def __init__(self, selector: Union[Callable[[str], bool], str]):
         if isinstance(selector, str):
             self.key = selector
-            self.selector = lambda x: x.name == selector
+
+            def apply_selector(x):
+                return x.name == selector
+
+            self.selector = apply_selector
         else:
             self.key = None
             self.selector = selector
@@ -504,9 +510,12 @@ class Apply(Node):
 class Forward(Lambda):
 
     def __init__(self, node: 'Node'):
+        def extract(x):
+            return x.value
+
         super().__init__(
             name=node.name,
-            extract=lambda x: x.value,
+            extract=extract,
             obj=node
         )
         self(node)
@@ -703,7 +712,11 @@ class Expanding(Node):
 
     def var(self):
         name = "ExpandingVar({})".format(self.name)
-        return self.agg(lambda x: np.var(x, ddof=1)).rename(name)
+
+        def var_func(x):
+            return np.var(x, ddof=1)
+
+        return self.agg(var_func).rename(name)
 
     def median(self):
         name = "ExpandingMedian({})".format(self.name)
@@ -711,7 +724,11 @@ class Expanding(Node):
 
     def std(self):
         name = "ExpandingSD({})".format(self.name)
-        return self.agg(lambda x: np.std(x, ddof=1)).rename(name)
+
+        def std_func(x):
+            return np.std(x, ddof=1)
+
+        return self.agg(std_func).rename(name)
 
     def min(self):
         name = "ExpandingMin({})".format(self.name)
@@ -742,7 +759,10 @@ class ExpandingNode(Node):
 class ExpandingCount(ExpandingNode):
 
     def __init__(self, name: str = None):
-        super().__init__(lambda w: (~np.isnan(w)).sum(), name)
+        def expand_func(w):
+            return (~np.isnan(w)).sum()
+
+        super().__init__(expand_func, name)
 
     def forward(self):
         expanding = self.inputs[0]
@@ -829,7 +849,9 @@ class RollingNode(Node):
 class RollingCount(RollingNode):
 
     def __init__(self, name: str = None):
-        super().__init__(lambda w: (~np.isnan(w)).sum(), name)
+        def roll_func(w):
+            return (~np.isnan(w)).sum()
+        super().__init__(roll_func, name)
 
     def forward(self):
         rolling = self.inputs[0]
@@ -888,7 +910,7 @@ class EWM(Node):
             # Compute weights
             if not self.adjust and len(self.weights) > 0:
                 self.weights[-1] *= self.alpha
-            self.weights += [(1 - self.alpha)**len(self.history)]
+            self.weights += [(1 - self.alpha) ** len(self.history)]
 
         return self.history, self.weights
 
@@ -946,8 +968,8 @@ class DebiasFactor(Node):
     def forward(self):
         ewm = self.inputs[0]
         w = np.array(ewm.weights)
-        a = w.sum()**2
-        b = (w**2).sum()
+        a = w.sum() ** 2
+        b = (w ** 2).sum()
         return a / (a - b)
 
     def has_next(self):
@@ -963,19 +985,19 @@ class ExponentialWeightedMovingVariance(Module):
 
     def build(self):
         ewm, node = self.inputs
-        t1 = (node**2).ewm(
+        t1 = (node ** 2).ewm(
             alpha=ewm.alpha,
             warmup=ewm.warmup,
             adjust=ewm.adjust,
             ignore_na=ewm.ignore_na
         ).mean()
-        t2 = ewm.mean()**2
+        t2 = ewm.mean() ** 2
         biased_variance = t1 - t2
 
         if self.bias:
             self.variance = biased_variance.rename(self.name)
         else:
-            self.variance = ewm.debias_factor()*biased_variance
+            self.variance = ewm.debias_factor() * biased_variance
             self.variance.name = self.name
 
     def flatten(self):

@@ -10,9 +10,17 @@ def create_wallet_source(wallet: Wallet, include_worth=True):
     symbol = wallet.instrument.symbol
 
     with Module(exchange_name + ":/" + symbol) as wallet_ds:
-        free_balance = Lambda(lambda w: w.balance.as_float(), wallet, name="free")
-        locked_balance = Lambda(lambda w: w.locked_balance.as_float(), wallet, name="locked")
-        total_balance = Lambda(lambda w: w.total_balance.as_float(), wallet, name="total")
+        def balance_as_float(w):
+            return w.balance.as_float()
+        free_balance = Lambda(balance_as_float, wallet, name="free")
+
+        def locked_balance_as_float(w):
+            return w.locked_balance.as_float()
+        locked_balance = Lambda(locked_balance_as_float, wallet, name="locked")
+
+        def total_balance_as_float(w):
+            return w.total_balance.as_float()
+        total_balance = Lambda(total_balance_as_float, wallet, name="total")
 
         nodes = [free_balance, locked_balance, total_balance]
 

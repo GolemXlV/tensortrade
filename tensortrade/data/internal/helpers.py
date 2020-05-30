@@ -18,8 +18,11 @@ def create_internal_feed(portfolio: 'Portfolio'):
         sources += [wallet.exchange]
         sources += [create_wallet_source(wallet, include_worth=(symbol != base_symbol))]
 
+    def condition_func(node):
+        return node.name.endswith(base_symbol + ":/total") or node.name.endswith("worth")
+
     worth_nodes = Condition(
-        lambda node: node.name.endswith(base_symbol + ":/total") or node.name.endswith("worth")
+        condition_func
     )(*sources)
 
     net_worth = Reduce(func=operator.add)(worth_nodes).rename("net_worth")
