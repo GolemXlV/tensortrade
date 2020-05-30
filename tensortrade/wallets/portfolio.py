@@ -212,7 +212,7 @@ class Portfolio(Component, TimedIdentifiable, FeedListener):
         ]
 
         keys = []
-        for k in data.keys():
+        for k in list(data.keys()):
             if any(k.endswith(end) for end in endings):
                 keys += [k]
             elif price_pattern.match(k):
