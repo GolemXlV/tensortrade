@@ -56,7 +56,10 @@ class DataFeed(Node):
         while len(starting) > 0:
             start = starting.pop()
 
-            edges = list(filter(lambda e: e[0] != start, edges))
+            def edges_filter(e):
+                return e[0] != start
+
+            edges = list(filter(edges_filter, edges))
 
             S = set([s for s, t in edges])
             T = set([t for s, t in edges])

@@ -25,7 +25,10 @@ def create_wallet_source(wallet: Wallet, include_worth=True):
         nodes = [free_balance, locked_balance, total_balance]
 
         if include_worth:
-            price = Select(lambda node: node.name.endswith(symbol))(wallet.exchange)
+            def include_worth_func(node):
+                return node.name.endswith(symbol)
+
+            price = Select(include_worth_func)(wallet.exchange)
             worth = BinOp(operator.mul, name="worth")(price, total_balance)
             nodes += [worth]
 
