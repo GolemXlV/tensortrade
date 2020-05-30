@@ -75,7 +75,7 @@ class TradingEnvironment(gym.Env, TimeIndexed):
         self._price_history: pd.DataFrame = kwargs.get('price_history', None)
 
         if self.feed:
-            self._external_keys = self.feed.next().keys()
+            self._external_keys = list(self.feed.next().keys())
             self.feed.reset()
 
         self.history = ObservationHistory(window_size=window_size)
