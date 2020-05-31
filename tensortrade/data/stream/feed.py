@@ -90,8 +90,8 @@ class DataFeed(Node):
     def next(self):
         self.run()
 
-        for listener in self.listeners:
-            listener.on_next(self.value)
+        # for listener in self.listeners:
+        #     listener.on_next(self.value)
 
         return self.value
 
